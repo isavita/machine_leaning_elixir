@@ -9,7 +9,6 @@ defmodule Algebra.Vector do
 
     iex> Algebra.Vector.dot_prod({1, 1, 3.4}, {2.8, 3, 1})
     9.2
-
   """
 
   @doc """
