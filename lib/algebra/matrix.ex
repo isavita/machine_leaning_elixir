@@ -7,8 +7,22 @@ defmodule Algebra.Matrix do
     iex> Algebra.Matrix.identity(3)
     [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
 
-    iex> > Algebra.Matrix.transpose([[1, 3, 5], [2, 4, 7]])
+    iex> Algebra.Matrix.zero(2, 3)
+    [[0, 0, 0], [0, 0, 0]]
+
+    iex> Algebra.Matrix.transpose([[1, 3, 5], [2, 4, 7]])
     [[1, 2], [3, 4], [5, 7]]
+
+    iex> Algebra.Matrix.add([[2, 2], [-2, -2], [0, 0]], [[1, 2], [3, 4], [5, 6]])
+    [[3, 4], [1, 2], [5, 6]]
+
+    iex> Algebra.Matrix.multiply([[2, 4], [-2, -2]], [[1, 2], [3, 4]])
+    [[14, 20], [-8, -12]]
+
+    iex> Algebra.Matrix.lup_decomposition([[1, 3, 5], [2, 4, 7], [1, 1, 0]])
+    {[[1, 0, 0], [0.5, 1, 0], [0.5, -1.0, 1]],
+      [[2, 4, 7], [0, 1.0, 1.5], [0, 0, -2.0]],
+      [[0, 1, 0], [1, 0, 0], [0, 0, 1]]}
 
     iex> Algebra.Matrix.det([[1, 2], [3, 4]])
     -2
@@ -22,7 +36,16 @@ defmodule Algebra.Matrix do
     |> Enum.to_list
     |> Enum.map(fn pos -> List.duplicate(0, size - 1) |> List.insert_at(pos, 1) end)
   end
-  def identity(_), do: raise ArgumentError, "the identity matrix's size has to be a positive integer"
+  def identity(_), do: raise ArgumentError, "the matrix's size has to be a positive integer"
+
+  @doc """
+  Creates zero matrix with specified row_size and column_size.
+  """
+  def zero(row_size, column_size) when is_integer(row_size) and row_size > 0 and is_integer(column_size) and column_size > 0 do
+    1..row_size
+    |>  Enum.map(fn _ -> List.duplicate(0, column_size) end)
+  end
+  def zero(_, _), do: raise ArgumentError, "the matrix's size has to be a positive integer"
 
   @doc """
   Calculates the transposed matrix.
@@ -40,9 +63,9 @@ defmodule Algebra.Matrix do
   end
 
   defp do_diag([], _), do: []
-  defp do_diag([head | tail], j) when length(head) <= j , do: []
-  defp do_diag([head | tail], j) do
-    [Enum.at(head, j) | do_diag(tail, j + 1)]
+  defp do_diag([h | _], j) when length(h) <= j , do: []
+  defp do_diag([h | t], j) do
+    [Enum.at(h, j) | do_diag(t, j + 1)]
   end
 
   @doc """
@@ -70,8 +93,8 @@ defmodule Algebra.Matrix do
   @doc """
   Multiplies two matrices when the columns of the first one are equal to the rows of the second one.
   """
-  def multiply([ha | ta], matrix_b) when length(ha) != length(matrix_b) do
-    raise ArgumentError, "the second matrix has to have rows equal to the columns of the first matrix."
+  def multiply([h | _], matrix_b) when length(h) != length(matrix_b) do
+    raise ArgumentError, "the second matrix has to have rows equal to the columns of the first matrix"
   end
   # OPTIMIZE: Spawn a process for calculating each row of the new matrix.
   def multiply(matrix_a, matrix_b) do
@@ -86,12 +109,12 @@ defmodule Algebra.Matrix do
         end)
   end
 
-  # TODO: Reuse the logic from multiply if possible
+  # TODO: Reuse the logic from multiply if possible.
   @doc """
   Multiplies the matrix by a row vector.
   """
   def multiply_row_vector(vector, matrix) when length(vector) != length(matrix) do
-    raise ArgumentError, "the matrix has to have rows equal to the length of the vector."
+    raise ArgumentError, "the matrix has to have rows equal to the length of the vector"
   end
   def multiply_row_vector(vector, matrix) do
     matrix
@@ -107,17 +130,10 @@ defmodule Algebra.Matrix do
   Multiplies the matrix by a row vector.
   """
   def multiply_column_vector([row | _], vector) when length(row) != length(vector) do
-    raise ArgumentError, "the matrix has to have columns equal to the length of the vector."
+    raise ArgumentError, "the matrix has to have columns equal to the length of the vector"
   end
   def multiply_column_vector(matrix, vector) do
     multiply(matrix, transpose([vector]))
-  end
-
-  @doc """
-  Calculates a pivot matrix used for numerical stability.
-  """
-  def pivot_matrix(matrix) do
-    matrix |> lup_decomposition |> elem(2)
   end
 
   @doc """
@@ -125,13 +141,19 @@ defmodule Algebra.Matrix do
   The permutation matrix is stored as a vector of integer containing
   column indexes where the permutation matrix has "1".
   """
+  def lup_decomposition([h | _] = matrix) when length(h) != length(matrix) do
+    raise ArgumentError, "the matrix has to be square"
+  end
   def lup_decomposition(matrix) do
     size = length(matrix)
     p_vector = 0..size |> Enum.to_list
-    {dec_matrix, p_vector} = do_lup_decomposition(matrix, p_vector, size, 0)
-    l = 0 # TODO implement calc_l_from_decompose_matrix
-    u = 0 # TODO implement calc_u_from_decompose_matrix
-    {l, u, calc_p_from_p_vector(p_vector)}
+    {_, p_vector} = do_lup_decomposition(matrix, p_vector, size, 0)
+    p = calc_p_from_p_vector(p_vector)
+    permuted_matrix = multiply(p, matrix)
+    l = identity(size)
+    u = zero(size, size)
+    {l, u} = calc_lu_from_permuted_matrix(permuted_matrix, l, u, 0, 0, size)
+    {l, u, p}
   end
 
   defp do_lup_decomposition(matrix, p_vector, size, i) when size <= i, do: {matrix, p_vector}
@@ -159,6 +181,24 @@ defmodule Algebra.Matrix do
     do_lup_decomposition(matrix, p_vector, size, i + 1)
   end
 
+  # HACK: try to simplify if possible.
+  defp calc_lu_from_permuted_matrix(_, l, u, i, _, size) when size <= i, do: {l, u}
+  defp calc_lu_from_permuted_matrix(matrix, l, u, i, j, size) when size <= j, do: calc_lu_from_permuted_matrix(matrix, l, u, i + 1, 0, size)
+  defp calc_lu_from_permuted_matrix(matrix, l, u, i, j, size) do
+    {l, u} =
+      if i <= j do
+        u_elem = get_value(matrix, i, j) - Enum.reduce(0..(i - 1), 0, fn k, sum -> sum + get_value(u, k, j) * get_value(l, i, k) end)
+        u = update_element(u, i, j, u_elem)
+        {l, u}
+      else
+        l_elem = get_value(matrix, i, j) - Enum.reduce(0..(j - 1), 0, fn k, sum -> sum + get_value(u, k, j) * get_value(l, i, k) end)
+        l_elem = l_elem / get_value(u, j, j)
+        l = update_element(l, i, j, l_elem)
+        {l, u}
+      end
+    calc_lu_from_permuted_matrix(matrix, l, u, i, j + 1, size)
+  end
+
   # The p_vector contains column indexes where permutation matrix P has "1" and
   # as a last element the size of the matrix A plus the number of permutations done
   # during LUP decomposition.
@@ -169,16 +209,13 @@ defmodule Algebra.Matrix do
     |> Enum.map(fn pos -> List.duplicate(0, size) |> List.insert_at(pos, 1) end)
   end
 
-  defp calc_l_from_decompose_matrix(matrix) do
-    matrix |> sub(identity(length(matrix)))
-  end
-
+  # HACK: try to use lup_decompostion result instead of do_lup_decompostion.
   @doc """
-  Calculates the determinant of square matrix using LU decomposition.
+  Calculates the determinant of square matrix using LUP decomposition.
   """
   def det([[]]), do: 0
   def det([[n]]) when is_number(n), do: n
-  def det([h | t] = matrix) when length(h) == length(matrix) do
+  def det([h | _] = matrix) when length(h) == length(matrix) do
     size = length(matrix)
     p_vector = 0..size |> Enum.to_list
     {dec_matrix, p_vector} = do_lup_decomposition(matrix, p_vector, size, 0)
@@ -202,11 +239,8 @@ defmodule Algebra.Matrix do
     update_for_u(update_element(matrix, j, k, new_value), i, j, k + 1, size)
   end
 
-  defp swap_elements(vector, i, j) when is_list(vector) and is_integer(i) and is_integer(j) do
-    temp = vector |> Enum.at(i)
-    vector
-    |> List.replace_at(i, Enum.at(vector, j))
-    |> List.replace_at(j, temp)
+  defp get_value(matrix, i, j) do
+    matrix |> Enum.at(i) |> Enum.at(j)
   end
 
   defp update_element(matrix, i, j, element) do
@@ -214,13 +248,11 @@ defmodule Algebra.Matrix do
     matrix |> List.replace_at(i, new_row)
   end
 
-  defp swap_nested_elements(list, {i1, j1}, {i2, j2}) when is_list(list) and is_integer(i1) and is_integer(j1) and is_integer(i2) and is_integer(j2) do
-    temp = list |> Enum.at(i1) |> Enum.at(j1)
-    row1 = list |> Enum.at(i1)
-    row2 = list |> Enum.at(i2)
-    new_row1 = row1 |> List.replace_at(j1, Enum.at(row2, j2))
-    new_row2 = row2 |> List.replace_at(j2, temp)
-    list |> List.replace_at(i1, new_row1) |> List.replace_at(i2, new_row2)
+  defp swap_elements(vector, i, j) when is_list(vector) and is_integer(i) and is_integer(j) do
+    temp = vector |> Enum.at(i)
+    vector
+    |> List.replace_at(i, Enum.at(vector, j))
+    |> List.replace_at(j, temp)
   end
 
   defp swap_raws(list, row1, row2) when is_list(list) and is_integer(row1) and is_integer(row2) do

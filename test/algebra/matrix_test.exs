@@ -26,6 +26,23 @@ defmodule Algebra.MatrixTest do
     end
   end
 
+  describe "Matrix.zero/1" do
+    test "returns 1-D, 2-D, ..., n-D identity matrix" do
+      assert Matrix.zero(1, 1) == [[0]]
+      assert Matrix.zero(2, 1) == [[0], [0]]
+      assert Matrix.zero(3, 3) == [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+      assert Matrix.zero(4, 5) == [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]]
+      assert Matrix.zero(5, 4) == [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
+    end
+
+    test "raises error when the argument is not a positive integer" do
+      assert_raise ArgumentError, fn -> Matrix.zero(0, 2) end
+      assert_raise ArgumentError, fn -> Matrix.zero(1, 2.7) end
+      assert_raise ArgumentError, fn -> Matrix.zero(-3, %{}) end
+      assert_raise ArgumentError, fn -> Matrix.zero(6, "bad argument") end
+    end
+  end
+
   describe "Matrix.transpose/1" do
     test "returns the transposed matrix of the original" do
       assert Matrix.transpose([[]]) == [[]]
@@ -108,22 +125,20 @@ defmodule Algebra.MatrixTest do
     end
   end
 
-  describe "Matrix.pivot_matrix/1" do
-    test "returns pivot_matrix" do
-      assert Matrix.pivot_matrix([[1, 3, 5], [2, 4, 7], [1, 1, 0]]) == [[0, 1, 0], [1, 0, 0], [0, 0, 1]]
+  describe "Matrix.lup_decomposition/1" do
+    test "returns a tuple with an unit lower triangular, upper triangular, and unit permutation matrices" do
+      matrix = [[1, 3, 5], [2, 4, 7], [1, 1, 0]]
+      l = [[1, 0, 0], [0.5, 1, 0], [0.5, -1, 1]]
+      u = [[2, 4, 7], [0, 1, 1.5], [0, 0, -2]]
+      p = [[0, 1, 0], [1, 0, 0], [0, 0, 1]]
+
+      assert Matrix.lup_decomposition(matrix) == {l, u, p}
+    end
+
+    test "raises error when the matrix is not square" do
+      assert_raise ArgumentError, fn -> Matrix.lup_decomposition([[1, 2], [3, 4], [5, 6]]) end
     end
   end
-
-  # describe "Matrix.lup_decomposition/1" do
-  #   test "returns a tuple with an unit lower triangular, upper triangular, and unit permutation matrices" do
-  #     matrix = [[1, 3, 5], [2, 4, 7], [1, 1, 0]]
-  #     l = [[1, 0, 0], [0.5, 1, 0], [0.5, -1, 1]]
-  #     u = [[2, 4, 70], [0, 1, 1.5], [0, 0, -2]]
-  #     p = [[0, 1, 0], [1, 0, 0], [0, 0, 1]]
-
-  #     assert Matrix.lup_decomposition(matrix) == {l, u, p}
-  #   end
-  # end
 
   describe "Matrix.det/1" do
     test "returns the determinant of a 0-D square matrix" do
