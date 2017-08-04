@@ -45,18 +45,66 @@ defmodule Algebra.MatrixTest do
   describe "Matrix.diag/1" do
     test "returns vector with the matrix diagonal" do
       assert Matrix.diag([[1, 2], [3, 4]]) == [1, 4]
+      assert Matrix.diag([[1, 2, 3], [4, 5, 6]]) == [1, 5]
+      assert Matrix.diag([[1, 2], [3, 4], [5, 6]]) == [1, 4]
+    end
+  end
+
+  describe "Matrix.add/2" do
+    test "adds the two matrices when they are with the same dimensions" do
+      assert Matrix.add([[2, 2], [-2, -2]], [[1, 2], [3, 4]]) == [[3, 4], [1, 2]]
+      assert Matrix.add([[2, 2], [-2, -2], [0, 0]], [[1, 2], [3, 4], [5, 6]]) == [[3, 4], [1, 2], [5, 6]]
+    end
+
+    test "raises error when the matrices are with different dimensions" do
+      assert_raise ArgumentError, fn -> Matrix.add([[1, 2], [3, 4]], [[1, 2], [3, 4], [5, 6]]) end
+      assert_raise ArgumentError, fn -> Matrix.add([[1, 2], [3, 4]], [[1, 2, 3], [4, 5, 6]]) end
     end
   end
 
   describe "Matrix.sub/2" do
-    test "subtracts second matrix form the firs one when they are with the same dimensionality" do
+    test "subtracts second matrix form the first one when they are with the same dimensions" do
       assert Matrix.sub([[2, 2], [-2, -2]], [[1, 2], [3, 4]]) == [[1, 0], [-5, -6]]
       assert Matrix.sub([[2, 2], [-2, -2], [0, 0]], [[1, 2], [3, 4], [5, 6]]) == [[1, 0], [-5, -6], [-5, -6]]
     end
 
-    test "raises error when the matrices are with different dimensionality" do
+    test "raises error when the matrices are with different dimensions" do
       assert_raise ArgumentError, fn -> Matrix.sub([[1, 2], [3, 4]], [[1, 2], [3, 4], [5, 6]]) end
       assert_raise ArgumentError, fn -> Matrix.sub([[1, 2], [3, 4]], [[1, 2, 3], [4, 5, 6]]) end
+    end
+  end
+
+  describe "Matrix.multiply/2" do
+    test "multiply square matrices" do
+      assert Matrix.multiply([[2, 2], [-2, -2]], [[1, 2], [3, 4]]) == [[8, 12], [-8, -12]]
+    end
+
+    test "multiply a MxN matrix with NxK matrix" do
+      assert Matrix.multiply([[2, 2], [-2, -2]], [[1, 2, 3], [4, 5, 6]]) == [[10, 14, 18], [-10, -14, -18]]
+    end
+
+    test "raises error when the matrices cannot be multiply" do
+      assert_raise ArgumentError, fn -> Matrix.multiply([[1, 2], [3, 4]], [[1, 2], [3, 4], [5, 6]]) end
+    end
+  end
+
+  describe "Matrix.multiply_row_vector/2" do
+    test "returns a row vector when multiplied by a row vector from the left-hand side" do
+      assert Matrix.multiply_row_vector([1, 2, 3], [[1, 2], [3, 4], [5, 6]]) == [22, 28]
+    end
+
+    test "raises error when the multiplication is not defined" do
+      assert_raise ArgumentError, fn -> Matrix.multiply_row_vector([1, 2], [[1, 2], [3, 4], [5, 6]]) end
+    end
+  end
+
+  describe "Matrix.multiply_column_vector/2" do
+    test "returns a single 'column' matrix when multiplied by a 'column' vector from the right-hand side" do
+      assert Matrix.multiply_column_vector([[1, 2, 3], [4, 5, 6]], [1, 2, 3]) == [[14], [32]]
+    end
+
+    test "raises error when the multiplication is not defined" do
+      assert_raise ArgumentError, fn -> Matrix.multiply_column_vector([[1, 2], [3, 4], [5, 6]], [1, 2, 3]) end
     end
   end
 

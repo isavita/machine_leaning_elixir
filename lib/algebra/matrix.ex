@@ -46,17 +46,71 @@ defmodule Algebra.Matrix do
   end
 
   @doc """
-    Subtracts matrices with the same dimensionality.
+  Adds matrices with the same dimensionality.
   """
-  def sub(matrix_a, matrix_b) when length(matrix_a) != length(matrix_b) do
-    raise ArgumentError, "the matrices have to be the same dimensions"
+  def add(matrix_a, matrix_b) do
+    element_wise_op(matrix_a, matrix_b, fn ai, bi -> ai + bi end)
   end
-  def sub([row_a | _], [row_b | _]) when length(row_a) != length(row_b) do
-    raise ArgumentError, "the matrices have to be the same dimensions"
-  end
+
+  @doc """
+  Subtracts matrices with the same dimensionality.
+  """
   def sub(matrix_a, matrix_b) do
+    element_wise_op(matrix_a, matrix_b, fn ai, bi -> ai - bi end)
+  end
+
+  defp element_wise_op([ha | ta], [hb | tb], _) when length(ha) != length(hb) or length(ta) != length(tb) do
+    raise ArgumentError, "the matrices have to have the same dimensions"
+  end
+  defp element_wise_op(matrix_a, matrix_b, fun) do
     Enum.zip(matrix_a, matrix_b)
-    |> Enum.map(fn {row_a, row_b} -> Enum.zip(row_a, row_b) |> Enum.map(fn {a, b} -> a - b end) end)
+    |> Enum.map(fn {row_a, row_b} -> Enum.zip(row_a, row_b) |> Enum.map(fn {a, b} -> fun.(a, b) end) end)
+  end
+
+  @doc """
+  Multiplies two matrices when the columns of the first one are equal to the rows of the second one.
+  """
+  def multiply([ha | ta], matrix_b) when length(ha) != length(matrix_b) do
+    raise ArgumentError, "the second matrix has to have rows equal to the columns of the first matrix."
+  end
+  # OPTIMIZE: Spawn a process for calculating each row of the new matrix.
+  def multiply(matrix_a, matrix_b) do
+    transposed_b = transpose(matrix_b)
+    matrix_a
+    |>  Enum.map(fn row_a ->
+          transposed_b |> Enum.map(fn row_b ->
+            Enum.zip(row_a, row_b)
+            |> Enum.map(fn {ai, bi} -> ai * bi end)
+            |> Enum.sum
+          end)
+        end)
+  end
+
+  # TODO: Reuse the logic from multiply if possible
+  @doc """
+  Multiplies the matrix by a row vector.
+  """
+  def multiply_row_vector(vector, matrix) when length(vector) != length(matrix) do
+    raise ArgumentError, "the matrix has to have rows equal to the length of the vector."
+  end
+  def multiply_row_vector(vector, matrix) do
+    matrix
+    |> transpose()
+    |>  Enum.map(fn row ->
+          Enum.zip(vector, row)
+          |> Enum.map(fn {vi, mi} -> vi * mi end)
+          |> Enum.sum
+        end)
+  end
+
+  @doc """
+  Multiplies the matrix by a row vector.
+  """
+  def multiply_column_vector([row | _], vector) when length(row) != length(vector) do
+    raise ArgumentError, "the matrix has to have columns equal to the length of the vector."
+  end
+  def multiply_column_vector(matrix, vector) do
+    multiply(matrix, transpose([vector]))
   end
 
   @doc """
