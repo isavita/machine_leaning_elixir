@@ -185,4 +185,23 @@ defmodule Algebra.MatrixTest do
       assert_raise ArgumentError, fn -> Matrix.det("bad argument") end
     end
   end
+
+  describe "Matrix.inverse/1" do
+    test "returns the inverse matrix of a given matrix when exists" do
+      matrix = [[-3, -2, -3], [5, 3, 3], [2, 1, 1]]
+      expected_invert = [[0, -1, 3], [1, 3, -6], [-1, -1, 1]]  |> List.flatten
+      invert = Matrix.inverse(matrix) |> List.flatten
+      eps = 0.0001
+
+      [invert, expected_invert]
+      |> Enum.zip
+      |> Enum.each(fn {a, b} ->
+        assert_in_delta a, b, eps
+      end)
+    end
+
+    test "raises error when the matrix is not square" do
+      assert_raise ArgumentError, fn -> Matrix.inverse([[1, 2]]) end
+    end
+  end
 end

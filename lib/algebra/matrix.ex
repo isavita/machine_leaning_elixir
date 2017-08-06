@@ -33,7 +33,7 @@ defmodule Algebra.Matrix do
   """
   def identity(size) when is_integer(size) and size > 0 do
     0..(size - 1)
-    |> Enum.to_list
+    |> Enum.into([])
     |> Enum.map(fn pos -> List.duplicate(0, size - 1) |> List.insert_at(pos, 1) end)
   end
   def identity(_), do: raise ArgumentError, "the matrix's size has to be a positive integer"
@@ -136,6 +136,82 @@ defmodule Algebra.Matrix do
     multiply(matrix, transpose([vector]))
   end
 
+  # HACK: try to use lup_decompostion result instead of do_lup_decompostion.
+  @doc """
+  Calculates the determinant of square matrix using LUP decomposition.
+  """
+  def det([[]]), do: 0
+  def det([[n]]) when is_number(n), do: n
+  def det([h | _] = matrix) when length(h) == length(matrix) do
+    size = length(matrix)
+    p_vector = 0..size |> Enum.into([])
+    {dec_matrix, p_vector} = do_lup_decomposition(matrix, p_vector, size, 0)
+    sign = :math.pow(-1, Enum.at(p_vector, -1) - size)
+    dec_matrix
+    |> diag()
+    |> Enum.reduce(sign, fn d, sum -> sum * d end)
+  end
+  def det(_), do: raise ArgumentError, "the matrix has to be represented as a nested NxN list"
+
+  @doc """
+  Inverses a given square matrix with no zero determinant.
+  """
+  def inverse([h | _] = matrix) when length(h) != length(matrix) do
+    raise ArgumentError, "the matrix has to be represented as a nested NxN list"
+  end
+  def inverse(matrix) do
+    size = length(matrix)
+    p_vector = 0..size |> Enum.into([])
+    {dec_matrix, p_vector} = do_lup_decomposition(matrix, p_vector, size, 0)
+    invert_matrix = calc_p_from_p_vector(p_vector)
+    do_inverse(dec_matrix, invert_matrix, 0, size)
+  end
+
+  defp do_inverse(_, invert_matrix, j, size) when j >= size, do: invert_matrix
+  defp do_inverse(matrix, invert_matrix, j, size) do
+    invert_matrix = pre_calc_row_inverst(matrix, invert_matrix, 0, j, size)
+    invert_matrix = calc_row_inverst(matrix, invert_matrix, size - 1, j, size)
+    do_inverse(matrix, invert_matrix, j + 1, size)
+  end
+
+  # TODO: give a better name of the function.
+  defp pre_calc_row_inverst(_, invert_matrix, i, _, size) when i >= size, do: invert_matrix
+  defp pre_calc_row_inverst(matrix, invert_matrix, i, j, size) do
+    invert_matrix =
+      cond do
+        i > 0 ->
+          new_elem =
+            0..(i - 1)
+            |> Enum.map(fn k -> get_value(matrix, i, k) * get_value(invert_matrix, k, j) end)
+            |> Enum.sum
+
+          update_element(invert_matrix, i, j, get_value(invert_matrix, i, j) - new_elem)
+        true -> invert_matrix
+      end
+
+    pre_calc_row_inverst(matrix, invert_matrix, i + 1, j, size)
+  end
+
+  defp calc_row_inverst(_, invert_matrix, i, _, _) when i <= -1, do: invert_matrix
+  defp calc_row_inverst(matrix, invert_matrix, i, j, size) do
+    invert_matrix =
+      cond do
+        (i + 1 <= size - 1) ->
+          new_elem =
+            (i + 1)..(size - 1)
+            |> Enum.map(fn k -> get_value(matrix, i, k) * get_value(invert_matrix, k, j) end)
+            |> Enum.sum
+
+          new_elem = (get_value(invert_matrix, i, j) - new_elem) / get_value(matrix, i, i)
+
+          update_element(invert_matrix, i, j, new_elem)
+        true ->
+          invert_matrix
+        end
+
+    calc_row_inverst(matrix, invert_matrix, i - 1, j, size)
+  end
+
   @doc """
   Calculates the LUP decomposition of square matrix.
   The permutation matrix is stored as a vector of integer containing
@@ -146,7 +222,7 @@ defmodule Algebra.Matrix do
   end
   def lup_decomposition(matrix) do
     size = length(matrix)
-    p_vector = 0..size |> Enum.to_list
+    p_vector = 0..size |> Enum.into([])
     {_, p_vector} = do_lup_decomposition(matrix, p_vector, size, 0)
     p = calc_p_from_p_vector(p_vector)
     permuted_matrix = multiply(p, matrix)
@@ -158,7 +234,8 @@ defmodule Algebra.Matrix do
 
   defp do_lup_decomposition(matrix, p_vector, size, i) when size <= i, do: {matrix, p_vector}
   defp do_lup_decomposition(matrix, p_vector, size, i) do
-    max_index = matrix
+    max_index =
+      matrix
       |> transpose
       |> Enum.at(i)
       |> Enum.with_index
@@ -186,15 +263,16 @@ defmodule Algebra.Matrix do
   defp calc_lu_from_permuted_matrix(matrix, l, u, i, j, size) when size <= j, do: calc_lu_from_permuted_matrix(matrix, l, u, i + 1, 0, size)
   defp calc_lu_from_permuted_matrix(matrix, l, u, i, j, size) do
     {l, u} =
-      if i <= j do
-        u_elem = get_value(matrix, i, j) - Enum.reduce(0..(i - 1), 0, fn k, sum -> sum + get_value(u, k, j) * get_value(l, i, k) end)
-        u = update_element(u, i, j, u_elem)
-        {l, u}
-      else
-        l_elem = get_value(matrix, i, j) - Enum.reduce(0..(j - 1), 0, fn k, sum -> sum + get_value(u, k, j) * get_value(l, i, k) end)
-        l_elem = l_elem / get_value(u, j, j)
-        l = update_element(l, i, j, l_elem)
-        {l, u}
+      cond do
+        i <= j ->
+          u_elem = get_value(matrix, i, j) - Enum.reduce(0..(i - 1), 0, fn k, sum -> sum + get_value(u, k, j) * get_value(l, i, k) end)
+          u = update_element(u, i, j, u_elem)
+          {l, u}
+        true ->
+          l_elem = get_value(matrix, i, j) - Enum.reduce(0..(j - 1), 0, fn k, sum -> sum + get_value(u, k, j) * get_value(l, i, k) end)
+          l_elem = l_elem / get_value(u, j, j)
+          l = update_element(l, i, j, l_elem)
+          {l, u}
       end
     calc_lu_from_permuted_matrix(matrix, l, u, i, j + 1, size)
   end
@@ -208,23 +286,6 @@ defmodule Algebra.Matrix do
     |> Enum.drop(-1)
     |> Enum.map(fn pos -> List.duplicate(0, size) |> List.insert_at(pos, 1) end)
   end
-
-  # HACK: try to use lup_decompostion result instead of do_lup_decompostion.
-  @doc """
-  Calculates the determinant of square matrix using LUP decomposition.
-  """
-  def det([[]]), do: 0
-  def det([[n]]) when is_number(n), do: n
-  def det([h | _] = matrix) when length(h) == length(matrix) do
-    size = length(matrix)
-    p_vector = 0..size |> Enum.to_list
-    {dec_matrix, p_vector} = do_lup_decomposition(matrix, p_vector, size, 0)
-    sign = :math.pow(-1, Enum.at(p_vector, -1) - size)
-    dec_matrix
-    |> diag()
-    |> Enum.reduce(sign, fn d, sum -> sum * d end)
-  end
-  def det(_), do: raise ArgumentError, "the matrix has to be represented as a nested NxN list"
 
   defp update_matrix(matrix, _, j, size) when size <= j, do: matrix
   defp update_matrix(matrix, i, j, size) do
@@ -255,9 +316,9 @@ defmodule Algebra.Matrix do
     |> List.replace_at(j, temp)
   end
 
-  defp swap_raws(list, row1, row2) when is_list(list) and is_integer(row1) and is_integer(row2) do
-    list
-    |> List.replace_at(row1, list |> Enum.at(row2))
-    |> List.replace_at(row2, list |> Enum.at(row1))
+  defp swap_raws(matrix, row1, row2) when is_list(matrix) and is_integer(row1) and is_integer(row2) do
+    matrix
+    |> List.replace_at(row1, matrix |> Enum.at(row2))
+    |> List.replace_at(row2, matrix |> Enum.at(row1))
   end
 end
