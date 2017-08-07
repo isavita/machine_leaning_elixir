@@ -2,7 +2,7 @@ Code.require_file "../lib/preliminaries.ex", __DIR__
 
 ExUnit.start
 defmodule PreliminariesTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
 
   describe "Preliminaries.distance/2" do
     test "Euclidean distance with 0, 1, 2, ..., n dimensional vectors" do

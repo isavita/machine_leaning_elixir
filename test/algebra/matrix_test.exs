@@ -2,7 +2,7 @@ Code.require_file "../../lib/algebra/matrix.ex", __DIR__
 
 ExUnit.start()
 defmodule Algebra.MatrixTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
 
   alias Algebra.Matrix
 
