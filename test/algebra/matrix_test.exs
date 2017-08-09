@@ -125,6 +125,32 @@ defmodule Algebra.MatrixTest do
     end
   end
 
+  describe "Matrix.extract_columns/2" do
+    test "creates a new matrix from the original with columns given as list of indexes" do
+      matrix = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+
+      assert Matrix.extract_columns(matrix, [1, 2]) == [[2, 3], [5, 6], [8, 9]]
+    end
+
+    test "raises error when the columns are not represented as a list" do
+      assert_raise ArgumentError, fn -> Matrix.extract_rows([[1, 2]], 0) end
+      assert_raise ArgumentError, fn -> Matrix.extract_rows([[1, 2]], {0, 1}) end
+    end
+  end
+
+  describe "Matrix.extract_rows/2" do
+    test "creates a new matrix from the original with rows given as list of indexes" do
+      matrix = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+
+      assert Matrix.extract_rows(matrix, [1, 2]) == [[4, 5, 6], [7, 8, 9]]
+    end
+
+    test "raises error when the rows are not represented as a list" do
+      assert_raise ArgumentError, fn -> Matrix.extract_rows([[1], [2]], 0) end
+      assert_raise ArgumentError, fn -> Matrix.extract_rows([[1], [2]], {0, 1}) end
+    end
+  end
+
   describe "Matrix.lup_decomposition/1" do
     test "returns a tuple with an unit lower triangular, upper triangular, and unit permutation matrices" do
       matrix = [[1, 3, 5], [2, 4, 7], [1, 1, 0]]

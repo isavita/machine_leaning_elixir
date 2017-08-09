@@ -136,6 +136,30 @@ defmodule Algebra.Matrix do
     multiply(matrix, transpose([vector]))
   end
 
+  @doc """
+  Creates a new matrix from original one using the `columns` indexes list to
+  determen which columns to copy from the original matrix.
+  """
+  def extract_columns(matrix, columns) when is_list(matrix) and is_list(columns) do
+    matrix
+    |> transpose()
+    |> extract_rows(columns)
+    |> transpose()
+  end
+  def extract_columns(_, _), do: raise ArgumentError, "the matrix and column indexes have to be lists"
+
+  @doc """
+  Creates a new matrix from original one using the `rows` indexes list to
+  determen which rows to copy from the original matrix.
+  """
+  def extract_rows(matrix, rows) when is_list(matrix) and is_list(rows) do
+    matrix
+    |> Enum.with_index
+    |> Enum.filter(fn {_, index} -> index in rows end)
+    |> Enum.map(fn {value, _} -> value end)
+  end
+  def extract_rows(_, _), do: raise ArgumentError, "the matrix and row indexes have to be lists"
+
   # HACK: try to use lup_decompostion result instead of do_lup_decompostion.
   @doc """
   Calculates the determinant of square matrix using LUP decomposition.
