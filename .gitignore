@@ -3,3 +3,4 @@ kv.exs
 test.exs
 math.ex
 *.beam
+*.dump
