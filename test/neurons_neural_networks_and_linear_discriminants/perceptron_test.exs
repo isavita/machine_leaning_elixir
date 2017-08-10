@@ -4,7 +4,7 @@ Code.require_file "../../lib/basic_math/statistics.ex", __DIR__
 
 ExUnit.start()
 defmodule NeuronsNeuralNetworksAndLinearDiscriminants.PerceptronTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
 
   alias NeuronsNeuralNetworksAndLinearDiscriminants.Perceptron
   alias Algebra.Matrix

@@ -2,12 +2,22 @@ Code.require_file "../algebra/matrix.ex", __DIR__
 Code.require_file "../algebra/vector.ex", __DIR__
 
 defmodule NeuronsNeuralNetworksAndLinearDiscriminants.Perceptron do
+  @moduledoc """
+  Provides implementation of single layer perceptron.
+  """
+
   alias Algebra.{Matrix, Vector}
 
+  @doc """
+  Predicts base on learned weights.
+  """
   def prediction(input, weights, activation_fun, bias \\ -1) do
     do_prediction([bias | input], weights, activation_fun)
   end
 
+  @doc """
+  Trains the perceptron n epochs using the same training data and learning rate.
+  """
   def training(training_data, weights, activation_fun, learning_rate \\ 0.1, epochs \\ 1) do
     do_training(training_data, weights, activation_fun, learning_rate, epochs)
   end
