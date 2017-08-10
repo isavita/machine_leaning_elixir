@@ -1,5 +1,6 @@
 Code.require_file "../../lib/neurons_neural_networks_and_linear_discriminants/perceptron.ex", __DIR__
 Code.require_file "../../lib/algebra/matrix.ex", __DIR__
+Code.require_file "../../lib/basic_math/statistics.ex", __DIR__
 
 ExUnit.start()
 defmodule NeuronsNeuralNetworksAndLinearDiscriminants.PerceptronTest do
@@ -7,6 +8,7 @@ defmodule NeuronsNeuralNetworksAndLinearDiscriminants.PerceptronTest do
 
   alias NeuronsNeuralNetworksAndLinearDiscriminants.Perceptron
   alias Algebra.Matrix
+  alias BasicMath.Statistics
 
   describe "Perceptron.prediction/3" do
     setup do
@@ -93,6 +95,13 @@ defmodule NeuronsNeuralNetworksAndLinearDiscriminants.PerceptronTest do
                   end)
             end)
 
+      # Data rescaling to range [0, 1]
+      data =
+        data
+        |> Matrix.transpose
+        |> Enum.map(&Statistics.rescaling(&1, [0, 1]))
+        |> Matrix.transpose
+
       reduced_data = data |> Matrix.extract_columns([1, 4, 8])
 
       data_size = length(reduced_data)
@@ -135,7 +144,7 @@ defmodule NeuronsNeuralNetworksAndLinearDiscriminants.PerceptronTest do
         end)
         |> Kernel./(total_number_of_examples)
 
-      assert accuracy > 0.5 # It is better than random guess :)
+      assert accuracy > 0.6 # It is better than random guess :)
     end
   end
 end
