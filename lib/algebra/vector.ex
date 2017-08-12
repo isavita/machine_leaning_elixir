@@ -20,6 +20,7 @@ defmodule Algebra.Vector do
   @doc """
   Calculates the dot product of two vectors.
   """
+  @spec dot_prod(list, list) :: list
   def dot_prod(vector_a, vector_b) when is_list(vector_a) and is_list(vector_b) do
     [vector_a, vector_b]
     |> Enum.zip
@@ -34,6 +35,7 @@ defmodule Algebra.Vector do
   @doc """
   Calculates the product between a vector and scalar.
   """
+  @spec multiply_scalar(list, number) :: list
   def multiply_scalar(vector, scalar) when is_list(vector) and is_number(scalar) do
     vector |> Enum.map(&(&1 * scalar))
   end
@@ -42,6 +44,7 @@ defmodule Algebra.Vector do
   @doc """
   Adds two vectors.
   """
+  @spec add(list, list) :: list
   def add(vector_a, vector_b) do
     element_wise_op(vector_a, vector_b, &+/2)
   end
@@ -49,10 +52,12 @@ defmodule Algebra.Vector do
   @doc """
   Subtracts two vectors.
   """
+  @spec sub(list, list) :: list
   def sub(vector_a, vector_b) do
     element_wise_op(vector_a, vector_b, &-/2)
   end
 
+  @spec element_wise_op(list, list, fun) :: list
   defp element_wise_op(vector_a, vector_b, operation) when length(vector_a) == length(vector_b) do
     [vector_a, vector_b]
     |> Enum.zip

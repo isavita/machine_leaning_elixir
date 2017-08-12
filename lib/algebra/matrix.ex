@@ -28,9 +28,15 @@ defmodule Algebra.Matrix do
     -2
   """
 
+  @typedoc """
+  List of nested lists.
+  """
+  @type matrix :: [list]
+
   @doc """
   Creates identity matrix with specified size.
   """
+  @spec identity(integer) :: matrix
   def identity(size) when is_integer(size) and size > 0 do
     0..(size - 1)
     |> Enum.into([])
@@ -41,6 +47,7 @@ defmodule Algebra.Matrix do
   @doc """
   Creates zero matrix with specified row_size and column_size.
   """
+  @spec zero(integer, integer) :: matrix
   def zero(row_size, column_size) when is_integer(row_size) and row_size > 0 and is_integer(column_size) and column_size > 0 do
     1..row_size
     |>  Enum.map(fn _ -> List.duplicate(0, column_size) end)
@@ -50,6 +57,7 @@ defmodule Algebra.Matrix do
   @doc """
   Calculates the transposed matrix.
   """
+  @spec transpose(matrix) :: matrix
   def transpose([[]]), do: [[]]
   def transpose([a]) when not is_list(a), do: raise ArgumentError, "the matrix has to be represented by a nested list"
   def transpose(a) when is_list(a), do: a |> Enum.zip |> Enum.map(&Tuple.to_list/1)
@@ -58,6 +66,7 @@ defmodule Algebra.Matrix do
   @doc """
   Gets diagonal elements of matrix.
   """
+  @spec diag(matrix) :: list
   def diag(matrix) do
     do_diag(matrix, 0)
   end
@@ -71,6 +80,7 @@ defmodule Algebra.Matrix do
   @doc """
   Adds matrices with the same dimensionality.
   """
+  @spec add(matrix, matrix) :: matrix
   def add(matrix_a, matrix_b) do
     element_wise_op(matrix_a, matrix_b, fn ai, bi -> ai + bi end)
   end
@@ -78,6 +88,7 @@ defmodule Algebra.Matrix do
   @doc """
   Subtracts matrices with the same dimensionality.
   """
+  @spec sub(matrix, matrix) :: matrix
   def sub(matrix_a, matrix_b) do
     element_wise_op(matrix_a, matrix_b, fn ai, bi -> ai - bi end)
   end
@@ -93,6 +104,7 @@ defmodule Algebra.Matrix do
   @doc """
   Multiplies two matrices when the columns of the first one are equal to the rows of the second one.
   """
+  @spec multiply(matrix, matrix) :: matrix
   def multiply([h | _], matrix_b) when length(h) != length(matrix_b) do
     raise ArgumentError, "the second matrix has to have rows equal to the columns of the first matrix"
   end
@@ -113,6 +125,7 @@ defmodule Algebra.Matrix do
   @doc """
   Multiplies the matrix by a row vector.
   """
+  @spec multiply_row_vector(list, matrix) :: matrix
   def multiply_row_vector(vector, matrix) when length(vector) != length(matrix) do
     raise ArgumentError, "the matrix has to have rows equal to the length of the vector"
   end
@@ -129,6 +142,7 @@ defmodule Algebra.Matrix do
   @doc """
   Multiplies the matrix by a row vector.
   """
+  @spec multiply_column_vector(matrix, list) :: matrix
   def multiply_column_vector([row | _], vector) when length(row) != length(vector) do
     raise ArgumentError, "the matrix has to have columns equal to the length of the vector"
   end
@@ -140,6 +154,7 @@ defmodule Algebra.Matrix do
   Creates a new matrix from original one using the `columns` indexes list to
   determen which columns to copy from the original matrix.
   """
+  @spec extract_columns(matrix, list) :: matrix
   def extract_columns(matrix, columns) when is_list(matrix) and is_list(columns) do
     matrix
     |> transpose()
@@ -152,6 +167,7 @@ defmodule Algebra.Matrix do
   Creates a new matrix from original one using the `rows` indexes list to
   determen which rows to copy from the original matrix.
   """
+  @spec extract_rows(matrix, list) :: matrix
   def extract_rows(matrix, rows) when is_list(matrix) and is_list(rows) do
     matrix
     |> Enum.with_index
@@ -164,6 +180,7 @@ defmodule Algebra.Matrix do
   @doc """
   Calculates the determinant of square matrix using LUP decomposition.
   """
+  @spec det(matrix) :: float
   def det([[]]), do: 0
   def det([[n]]) when is_number(n), do: n
   def det([h | _] = matrix) when length(h) == length(matrix) do
@@ -180,6 +197,7 @@ defmodule Algebra.Matrix do
   @doc """
   Inverses a given square matrix with no zero determinant.
   """
+  @spec inverse(matrix) :: matrix
   def inverse([h | _] = matrix) when length(h) != length(matrix) do
     raise ArgumentError, "the matrix has to be represented as a nested NxN list"
   end
@@ -191,6 +209,7 @@ defmodule Algebra.Matrix do
     do_inverse(dec_matrix, invert_matrix, 0, size)
   end
 
+  @spec do_inverse(matrix, matrix, integer, integer) :: matrix
   defp do_inverse(_, invert_matrix, j, size) when j >= size, do: invert_matrix
   defp do_inverse(matrix, invert_matrix, j, size) do
     invert_matrix = pre_calc_row_inverst(matrix, invert_matrix, 0, j, size)
@@ -199,6 +218,7 @@ defmodule Algebra.Matrix do
   end
 
   # TODO: give a better name of the function.
+  @spec pre_calc_row_inverst(matrix, matrix, integer, integer, integer) :: matrix
   defp pre_calc_row_inverst(_, invert_matrix, i, _, size) when i >= size, do: invert_matrix
   defp pre_calc_row_inverst(matrix, invert_matrix, i, j, size) do
     invert_matrix =
@@ -216,6 +236,7 @@ defmodule Algebra.Matrix do
     pre_calc_row_inverst(matrix, invert_matrix, i + 1, j, size)
   end
 
+  @spec calc_row_inverst(matrix, matrix, integer, integer, integer) :: matrix
   defp calc_row_inverst(_, invert_matrix, i, _, _) when i <= -1, do: invert_matrix
   defp calc_row_inverst(matrix, invert_matrix, i, j, size) do
     invert_matrix =
@@ -241,6 +262,7 @@ defmodule Algebra.Matrix do
   The permutation matrix is stored as a vector of integer containing
   column indexes where the permutation matrix has "1".
   """
+  @spec lup_decomposition(matrix) :: {matrix, matrix, matrix}
   def lup_decomposition([h | _] = matrix) when length(h) != length(matrix) do
     raise ArgumentError, "the matrix has to be square"
   end
@@ -256,6 +278,7 @@ defmodule Algebra.Matrix do
     {l, u, p}
   end
 
+  @spec do_lup_decomposition(matrix, list, integer, integer) :: {matrix, list}
   defp do_lup_decomposition(matrix, p_vector, size, i) when size <= i, do: {matrix, p_vector}
   defp do_lup_decomposition(matrix, p_vector, size, i) do
     max_index =
@@ -283,6 +306,7 @@ defmodule Algebra.Matrix do
   end
 
   # HACK: try to simplify if possible.
+  @spec calc_lu_from_permuted_matrix(matrix, integer, integer, integer, integer, integer) :: {integer, integer}
   defp calc_lu_from_permuted_matrix(_, l, u, i, _, size) when size <= i, do: {l, u}
   defp calc_lu_from_permuted_matrix(matrix, l, u, i, j, size) when size <= j, do: calc_lu_from_permuted_matrix(matrix, l, u, i + 1, 0, size)
   defp calc_lu_from_permuted_matrix(matrix, l, u, i, j, size) do
@@ -304,6 +328,7 @@ defmodule Algebra.Matrix do
   # The p_vector contains column indexes where permutation matrix P has "1" and
   # as a last element the size of the matrix A plus the number of permutations done
   # during LUP decomposition.
+  @spec calc_p_from_p_vector(list) :: list
   defp calc_p_from_p_vector(p_vector) do
     size = length(p_vector) - 2 # the matrix's indexes start from 0
     p_vector
@@ -311,6 +336,7 @@ defmodule Algebra.Matrix do
     |> Enum.map(fn pos -> List.duplicate(0, size) |> List.insert_at(pos, 1) end)
   end
 
+  @spec update_matrix(matrix, integer, integer, integer) :: matrix
   defp update_matrix(matrix, _, j, size) when size <= j, do: matrix
   defp update_matrix(matrix, i, j, size) do
       new_value = (matrix |> Enum.at(j) |> Enum.at(i)) / (matrix |> Enum.at(i) |> Enum.at(i))
@@ -318,21 +344,25 @@ defmodule Algebra.Matrix do
       update_matrix(matrix, i, j + 1, size)
   end
 
+  @spec update_for_u(matrix, integer, integer, integer, integer) :: matrix
   defp update_for_u(matrix, _, _, k, size) when size <= k, do: matrix
   defp update_for_u(matrix, i, j, k, size) do
     new_value = (matrix |> Enum.at(j) |> Enum.at(k)) - ((matrix |> Enum.at(j) |> Enum.at(i)) * (matrix |> Enum.at(i) |> Enum.at(k)))
     update_for_u(update_element(matrix, j, k, new_value), i, j, k + 1, size)
   end
 
+  @spec get_value(matrix, integer, integer) :: any
   defp get_value(matrix, i, j) do
     matrix |> Enum.at(i) |> Enum.at(j)
   end
 
+  @spec update_element(matrix, integer, integer, any) :: any
   defp update_element(matrix, i, j, element) do
     new_row = matrix |> Enum.at(i) |> List.replace_at(j, element)
     matrix |> List.replace_at(i, new_row)
   end
 
+  @spec swap_elements(list, integer, integer) :: list
   defp swap_elements(vector, i, j) when is_list(vector) and is_integer(i) and is_integer(j) do
     temp = vector |> Enum.at(i)
     vector
@@ -340,6 +370,7 @@ defmodule Algebra.Matrix do
     |> List.replace_at(j, temp)
   end
 
+  @spec swap_raws(matrix, list, list) :: matrix
   defp swap_raws(matrix, row1, row2) when is_list(matrix) and is_integer(row1) and is_integer(row2) do
     matrix
     |> List.replace_at(row1, matrix |> Enum.at(row2))
