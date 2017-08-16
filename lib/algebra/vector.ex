@@ -33,29 +33,46 @@ defmodule Algebra.Vector do
   def dot_prod(_, _), do: raise ArgumentError, "invalid argument"
 
   @doc """
+  Adds to each element of the vector the scalar.
+  """
+  @spec add_scalar(list, number) :: list
+  def add_scalar(vector, scalar), do: vector_scalar_op(vector, scalar, &+/2)
+
+  @doc """
+  Substracts from each element of the vector the scalar.
+  """
+  @spec sub_scalar(list, number) :: list
+  def sub_scalar(vector, scalar), do: vector_scalar_op(vector, scalar, &-/2)
+
+  @doc """
   Calculates the product between a vector and scalar.
   """
   @spec multiply_scalar(list, number) :: list
-  def multiply_scalar(vector, scalar) when is_list(vector) and is_number(scalar) do
-    vector |> Enum.map(&(&1 * scalar))
-  end
-  def multiply_scalar(_, _), do: raise ArgumentError, "invalid argument"
+  def multiply_scalar(vector, scalar), do: vector_scalar_op(vector, scalar, &*/2)
 
   @doc """
   Adds two vectors.
   """
   @spec add(list, list) :: list
-  def add(vector_a, vector_b) do
-    element_wise_op(vector_a, vector_b, &+/2)
-  end
+  def add(vector_a, vector_b), do: element_wise_op(vector_a, vector_b, &+/2)
 
   @doc """
   Subtracts two vectors.
   """
   @spec sub(list, list) :: list
-  def sub(vector_a, vector_b) do
-    element_wise_op(vector_a, vector_b, &-/2)
-  end
+  def sub(vector_a, vector_b), do: element_wise_op(vector_a, vector_b, &-/2)
+
+  @doc """
+  Divides two vectors.
+  """
+  @spec div_element_wise(list, list) :: list
+  def div_element_wise(vector_a, vector_b), do: element_wise_op(vector_a, vector_b, &//2)
+
+  @doc """
+  Multiplies two vectors (a.k.a Hadamard product).
+  """
+  @spec hadamard_prod(list, list) :: list
+  def hadamard_prod(vector_a, vector_b), do: element_wise_op(vector_a, vector_b, &*/2)
 
   @spec element_wise_op(list, list, fun) :: list
   defp element_wise_op(vector_a, vector_b, operation) when length(vector_a) == length(vector_b) do
@@ -64,4 +81,10 @@ defmodule Algebra.Vector do
     |> Enum.map(fn {a, b} -> operation.(a, b) end)
   end
   defp element_wise_op(_, _, _), do: raise ArgumentError, "the vectors have to be with equal lengths"
+
+  @spec vector_scalar_op(list, number, fun) :: list
+  def vector_scalar_op(vector, scalar, operation) when is_list(vector) and is_number(scalar) do
+    Enum.map(vector, &operation.(&1, scalar))
+  end
+  def vector_scalar_op(_, _, _), do: raise ArgumentError, "invalid argument"
 end

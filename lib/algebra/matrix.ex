@@ -81,25 +81,20 @@ defmodule Algebra.Matrix do
   Adds matrices with the same dimensionality.
   """
   @spec add(matrix, matrix) :: matrix
-  def add(matrix_a, matrix_b) do
-    element_wise_op(matrix_a, matrix_b, fn ai, bi -> ai + bi end)
-  end
+  def add(matrix_a, matrix_b), do: element_wise_op(matrix_a, matrix_b, &+/2)
 
   @doc """
   Subtracts matrices with the same dimensionality.
   """
   @spec sub(matrix, matrix) :: matrix
-  def sub(matrix_a, matrix_b) do
-    element_wise_op(matrix_a, matrix_b, fn ai, bi -> ai - bi end)
-  end
+  def sub(matrix_a, matrix_b), do: element_wise_op(matrix_a, matrix_b, &-/2)
 
-  defp element_wise_op([ha | ta], [hb | tb], _) when length(ha) != length(hb) or length(ta) != length(tb) do
-    raise ArgumentError, "the matrices have to have the same dimensions"
-  end
-  defp element_wise_op(matrix_a, matrix_b, fun) do
-    Enum.zip(matrix_a, matrix_b)
-    |> Enum.map(fn {row_a, row_b} -> Enum.zip(row_a, row_b) |> Enum.map(fn {a, b} -> fun.(a, b) end) end)
-  end
+  @doc """
+  Takes two matrices of the same dimensions, and produces another matrix where each element ij
+  is the product of elements ij of the original two matrices.
+  """
+  @spec hadamard_prod(matrix, matrix) :: matrix
+  def hadamard_prod(matrix_a, matrix_b), do: element_wise_op(matrix_a, matrix_b, &*/2)
 
   @doc """
   Multiplies two matrices when the columns of the first one are equal to the rows of the second one.
@@ -115,7 +110,7 @@ defmodule Algebra.Matrix do
     |>  Enum.map(fn row_a ->
           transposed_b |> Enum.map(fn row_b ->
             Enum.zip(row_a, row_b)
-            |> Enum.map(fn {ai, bi} -> ai * bi end)
+            |> Enum.map(fn {ai, b} -> ai * b end)
             |> Enum.sum
           end)
         end)
@@ -175,6 +170,28 @@ defmodule Algebra.Matrix do
     |> Enum.map(fn {value, _} -> value end)
   end
   def extract_rows(_, _), do: raise ArgumentError, "the matrix and row indexes have to be lists"
+
+  @doc """
+  Applies the operation to each row element the corresponding vector element.
+  """
+  @spec row_wise_operation(matrix, list, fun) :: matrix
+  def row_wise_operation([row | _], vector, _) when length(row) != length(vector) do
+    raise ArgumentError, "the matrix's rows have to have the same length as the vector"
+  end
+  def row_wise_operation(matrix, vector, operation) do
+    matrix |> Enum.map(fn row -> element_wise_op([row], [vector], operation) |> Enum.at(0) end)
+  end
+
+  @doc """
+  Applies the operation to each column element the corresponding vector element.
+  """
+  @spec column_wise_operation(matrix, list, fun) :: matrix
+  def column_wise_operation(matrix, vector, _) when length(matrix) != length(vector) do
+    raise ArgumentError, "the matrix's columns have to have the same length as the vector"
+  end
+  def column_wise_operation(matrix, vector, operation) do
+    row_wise_operation(transpose(matrix), vector, operation) |> transpose
+  end
 
   # HACK: try to use lup_decompostion result instead of do_lup_decompostion.
   @doc """
@@ -375,5 +392,14 @@ defmodule Algebra.Matrix do
     matrix
     |> List.replace_at(row1, matrix |> Enum.at(row2))
     |> List.replace_at(row2, matrix |> Enum.at(row1))
+  end
+
+  @spec element_wise_op(matrix, matrix, fun) :: matrix
+  defp element_wise_op([ha | _] = ma, [hb | _] = mb, _) when length(ma) != length(mb) or length(ha) != length(hb) do
+    raise ArgumentError, "the matrices have to have the same dimensions"
+  end
+  defp element_wise_op(matrix_a, matrix_b, operation) do
+    Enum.zip(matrix_a, matrix_b)
+    |> Enum.map(fn {row_a, row_b} -> Enum.zip(row_a, row_b) |> Enum.map(fn {a, b} -> operation.(a, b) end) end)
   end
 end

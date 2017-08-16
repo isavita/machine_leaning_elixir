@@ -91,6 +91,17 @@ defmodule Algebra.MatrixTest do
     end
   end
 
+  describe "Matrix.hadamard_prod/2" do
+    test "returns a Hadamard's product of two matrices" do
+      assert Matrix.hadamard_prod([[1, 2], [-3, -4]], [[0, 2], [2, 0]]) == [[0, 4], [-6, 0]]
+    end
+
+    test "raises error when the matrices are not with the same dimensions" do
+      assert_raise ArgumentError, fn -> Matrix.hadamard_prod([[1], [2]], [[1, 2]]) end
+      assert_raise ArgumentError, fn -> Matrix.hadamard_prod([[1, 2]], [[1], [2]]) end
+    end
+  end
+
   describe "Matrix.multiply/2" do
     test "multiply square matrices" do
       assert Matrix.multiply([[2, 2], [-2, -2]], [[1, 2], [3, 4]]) == [[8, 12], [-8, -12]]
@@ -148,6 +159,34 @@ defmodule Algebra.MatrixTest do
     test "raises error when the rows are not represented as a list" do
       assert_raise ArgumentError, fn -> Matrix.extract_rows([[1], [2]], 0) end
       assert_raise ArgumentError, fn -> Matrix.extract_rows([[1], [2]], {0, 1}) end
+    end
+  end
+
+  describe "Matrix.row_wise_operation/3" do
+    test "returns the initial matrix with added to each row element the corresponding vector element when the operation is addition" do
+      matrix = [[1, 2, 3], [4, 5, 6]]
+      vector = [1, 2, -1]
+      expected = [[2, 4, 2], [5, 7, 5]]
+
+      assert Matrix.row_wise_operation(matrix, vector, &+/2) == expected
+    end
+
+    test "raises error when the matrix rows is not the same length as the vector" do
+      assert_raise ArgumentError, fn -> Matrix.row_wise_operation([[1], [2]], [1, 2], &+/2) end
+    end
+  end
+
+  describe "Matrix.column_wise_operation/3" do
+    test "returns the initial matrix with added to each column element the corresponding vector element when the operation is addition" do
+      matrix = [[1, 2], [3, 4], [5, 6]]
+      vector = [1, 2, -1]
+      expected = [[2, 3], [5, 6], [4, 5]]
+
+      assert Matrix.column_wise_operation(matrix, vector, &+/2) == expected
+    end
+
+    test "raises error when the matrix columns is not the same length as the vector" do
+      assert_raise ArgumentError, fn -> Matrix.column_wise_operation([[1], [2], [3]], [1, 2], &+/2) end
     end
   end
 
