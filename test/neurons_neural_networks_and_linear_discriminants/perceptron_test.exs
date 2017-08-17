@@ -29,7 +29,7 @@ defmodule NeuronsNeuralNetworksAndLinearDiscriminants.PerceptronTest do
         [input: [-1, 1, 1], target: 1],
       ]
       learning_rate = 0.1
-      training_epochs = 5
+      training_epochs = 10
 
       weights =
         Perceptron.training(
@@ -55,7 +55,7 @@ defmodule NeuronsNeuralNetworksAndLinearDiscriminants.PerceptronTest do
         [input: [-1, 1, 1], target: 1],
       ]
       learning_rate = 0.2
-      training_epochs = 5
+      training_epochs = 10
 
       weights = Perceptron.training(training_data, context[:weights], context[:activation], learning_rate, training_epochs)
 
@@ -120,7 +120,7 @@ defmodule NeuronsNeuralNetworksAndLinearDiscriminants.PerceptronTest do
             end)
 
       learning_rate = 0.1
-      training_epochs = 50
+      training_epochs = 100
 
       weights =
         Perceptron.training(
@@ -145,6 +145,108 @@ defmodule NeuronsNeuralNetworksAndLinearDiscriminants.PerceptronTest do
         |> Kernel./(total_number_of_examples)
 
       assert accuracy > 0.6 # It is better than random guess :)
+    end
+  end
+
+  describe "Problem 3.2" do
+    setup do
+      weights = [[-0.2, 0.4, -0.7]]
+      not_weights = [[-0.1, 0.5]]
+      activation_fun = fn x when x >= 0 -> 1; _ -> 0 end
+
+      [weights: weights, not_weights: not_weights, activation: activation_fun]
+    end
+
+    test "learns NOT logical function", context do
+      # the input bias is set to -1
+      training_data = [
+        [input: [-1, 0], target: 1],
+        [input: [-1, 1], target: 0],
+      ]
+      learning_rate = 0.1
+      training_epochs = 10
+
+      weights = Perceptron.training(
+        training_data,
+        context[:not_weights],
+        context[:activation],
+        learning_rate,
+        training_epochs
+      )
+
+      assert Perceptron.prediction([0], weights, context[:activation]) == 1
+      assert Perceptron.prediction([1], weights, context[:activation]) == 0
+    end
+
+    test "learns NOR logical function", context do
+      # the input bias is set to -1
+      training_data = [
+        [input: [-1, 0, 0], target: 1],
+        [input: [-1, 0, 1], target: 0],
+        [input: [-1, 1, 0], target: 0],
+        [input: [-1, 1, 1], target: 0],
+      ]
+      learning_rate = 0.1
+      training_epochs = 10
+
+      weights = Perceptron.training(
+        training_data,
+        context[:weights],
+        context[:activation],
+        learning_rate,
+        training_epochs
+      )
+
+      assert Perceptron.prediction([0, 0], weights, context[:activation]) == 1
+      assert Perceptron.prediction([1, 0], weights, context[:activation]) == 0
+      assert Perceptron.prediction([0, 1], weights, context[:activation]) == 0
+      assert Perceptron.prediction([1, 1], weights, context[:activation]) == 0
+    end
+  end
+
+  describe "Problem 3.3" do
+    setup do
+      weights = [
+        [0.5, -0.5, 0.5, 0.5]
+      ]
+      activation_fun = fn x when x > 1 -> 1; _ -> 0 end
+
+      [weights: weights, activation: activation_fun]
+    end
+
+    test "impossible to learn Parity Problem for three inputs with a Perceptron", context do
+      # The parity problem returns `1` if the number of inputs that are `1` is even,
+      # and `0` otherwise.
+      # three iputs plus the bias
+      training_data = [
+        [input: [-1, 0, 0, 0], target: 0],
+        [input: [-1, 0, 0, 1], target: 0],
+        [input: [-1, 0, 1, 0], target: 0],
+        [input: [-1, 0, 1, 1], target: 1],
+        [input: [-1, 1, 0, 0], target: 0],
+        [input: [-1, 1, 0, 1], target: 1],
+        [input: [-1, 1, 1, 0], target: 1],
+        [input: [-1, 1, 1, 1], target: 0],
+      ]
+      learning_rate = 0.1
+      training_epochs = 20
+
+      weights = Perceptron.training(
+        training_data,
+        context[:weights],
+        context[:activation],
+        learning_rate,
+        training_epochs
+      )
+
+      refute Perceptron.prediction([0, 0, 0], weights, context[:activation]) == 1
+      assert Perceptron.prediction([0, 0, 1], weights, context[:activation]) == 0
+      assert Perceptron.prediction([0, 1, 0], weights, context[:activation]) == 0
+      assert Perceptron.prediction([0, 1, 1], weights, context[:activation]) == 1
+      assert Perceptron.prediction([1, 0, 0], weights, context[:activation]) == 0
+      assert Perceptron.prediction([1, 0, 1], weights, context[:activation]) == 1
+      refute Perceptron.prediction([1, 1, 0], weights, context[:activation]) == 1
+      refute Perceptron.prediction([1, 1, 1], weights, context[:activation]) == 0
     end
   end
 end
