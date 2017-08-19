@@ -97,6 +97,13 @@ defmodule Algebra.Matrix do
   def hadamard_prod(matrix_a, matrix_b), do: element_wise_op(matrix_a, matrix_b, &*/2)
 
   @doc """
+  Takes two matrices of the same dimensions and produces another matrix by applying the
+  function for the corresponding pair of element from each matrix.
+  """
+  @spec element_wise_fun(matrix, matrix, fun) :: matrix
+  def element_wise_fun(matrix_a, matrix_b, fun), do: element_wise_op(matrix_a, matrix_b, fun)
+
+  @doc """
   Multiplies two matrices when the columns of the first one are equal to the rows of the second one.
   """
   @spec multiply(matrix, matrix) :: matrix
@@ -191,6 +198,23 @@ defmodule Algebra.Matrix do
   end
   def column_wise_operation(matrix, vector, operation) do
     row_wise_operation(transpose(matrix), vector, operation) |> transpose
+  end
+
+  @doc """
+  Applies the operation to each element of the matrix and the scalar.
+  """
+  @spec scalar_element_wise_operation(matrix, number, fun) :: matrix
+  def scalar_element_wise_operation(matrix, scalar, operation) do
+    curried_operation = fn x -> operation.(scalar, x) end
+    element_wise_fun(matrix, curried_operation)
+  end
+
+  @doc """
+  Applies the function to each element of the matrix.
+  """
+  @spec element_wise_fun(matrix, fun) :: matrix
+  def element_wise_fun(matrix, fun) do
+    matrix |> Enum.map(fn row -> Enum.map(row, &fun.(&1)) end)
   end
 
   # HACK: try to use lup_decompostion result instead of do_lup_decompostion.

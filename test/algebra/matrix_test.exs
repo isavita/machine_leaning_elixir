@@ -190,6 +190,37 @@ defmodule Algebra.MatrixTest do
     end
   end
 
+  describe "Matrix.scalar_element_wise_operation/3" do
+    test "returns the initial matrix with added to each element the scalar" do
+      matrix = [[1, 2, 3], [4, 5, 6]]
+      scalar = -2
+      expected = [[-1, 0, 1], [2, 3, 4]]
+
+      assert Matrix.scalar_element_wise_operation(matrix, scalar, &+/2) == expected
+    end
+  end
+
+  describe "Matrix.element_wise_fun/2" do
+    test "returns the initial matrix with applied the function to each element" do
+      matrix = [[1, 2, 3], [4, 5, 6]]
+      function = fn x -> x * x end
+      expected = [[1, 4, 9], [16, 25, 36]]
+
+      assert Matrix.element_wise_fun(matrix, function) == expected
+    end
+  end
+
+  describe "Matrix.element_wise_fun/3" do
+    test "returns a matrix with combined the two input matrices with applied the function to each pair of elements" do
+      matrix_a = [[1, 2, 3], [4, 5, 6]]
+      matrix_b = [[7, 8, -3], [4, 5, 6]]
+      function = fn x, y -> x + y end
+      expected = [[8, 10, 0], [8, 10, 12]]
+
+      assert Matrix.element_wise_fun(matrix_a, matrix_b, function) == expected
+    end
+  end
+
   describe "Matrix.lup_decomposition/1" do
     test "returns a tuple with an unit lower triangular, upper triangular, and unit permutation matrices" do
       matrix = [[1, 3, 5], [2, 4, 7], [1, 1, 0]]
