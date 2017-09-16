@@ -23,4 +23,10 @@ defmodule BasicMath.CalculusTest do
       assert_in_delta Calculus.sigmoid_derivative(20), 0, @epsilon_precision
     end
   end
+
+  describe "Calculus.softmax/1" do
+    test "returns the correct values of softmax for the given arguments" do
+
+    end
+  end
 end
